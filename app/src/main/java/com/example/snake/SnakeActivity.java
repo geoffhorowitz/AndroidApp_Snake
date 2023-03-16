@@ -1,5 +1,6 @@
 package com.example.snake;
 
+import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
 import android.app.Activity;
@@ -16,6 +17,8 @@ public class SnakeActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        int speed_val = getIntent().getExtras().getInt("speed");
+
         // Get the pixel dimensions of the screen
         Display display = getWindowManager().getDefaultDisplay();
 
@@ -24,7 +27,7 @@ public class SnakeActivity extends Activity {
         display.getSize(size);
 
         // Create a new instance of the SnakeEngine class
-        snakeEngine = new SnakeEngine(this, size);
+        snakeEngine = new SnakeEngine(this, size, speed_val);
 
         // Make snakeEngine the view of the Activity
         setContentView(snakeEngine);

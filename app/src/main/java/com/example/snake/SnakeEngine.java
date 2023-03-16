@@ -55,7 +55,7 @@ class SnakeEngine extends SurfaceView implements Runnable {
     // // Control pausing between updates
     private long nextFrameTime;
     // // Update the game 10 times per second
-    private final long FPS = 1;
+    private int FPS = 1;
     // // There are 1000 milliseconds in a second
     private final long MILLIS_PER_SECOND = 1000;
     // We will draw the frame much more often
@@ -81,7 +81,7 @@ class SnakeEngine extends SurfaceView implements Runnable {
     private Paint paint;
 
 
-    public SnakeEngine(Context context, Point size) {
+    public SnakeEngine(Context context, Point size, int speed) {
         super(context);
 
         context = context;
@@ -94,6 +94,7 @@ class SnakeEngine extends SurfaceView implements Runnable {
         // How many blocks of the same size will fit into the height
         numBlocksHigh = screenY / blockSize;
 
+        FPS = speed;
         // Set the sound up
         /*soundPool = new SoundPool(10, AudioManager.STREAM_MUSIC, 0);
         try {
@@ -319,40 +320,35 @@ class SnakeEngine extends SurfaceView implements Runnable {
     public boolean onTouchEvent(MotionEvent motionEvent) {
 
         switch (motionEvent.getAction() & MotionEvent.ACTION_MASK) {
-            case MotionEvent.ACTION_UP:
-                if (motionEvent.getX() >= screenX / 2) {
-                    switch(heading){
-                        case UP:
-                            heading = Heading.RIGHT;
-                            break;
-                        case RIGHT:
-                            heading = Heading.DOWN;
-                            break;
-                        case DOWN:
-                            heading = Heading.LEFT;
-                            break;
-                        case LEFT:
-                            heading = Heading.UP;
-                            break;
-                    }
-                } else {
-                    switch(heading){
-                        case UP:
-                            heading = Heading.LEFT;
-                            break;
-                        case LEFT:
-                            heading = Heading.DOWN;
-                            break;
-                        case DOWN:
-                            heading = Heading.RIGHT;
-                            break;
-                        case RIGHT:
-                            heading = Heading.UP;
-                            break;
-                    }
+            case MotionEvent.ACTION_DOWN:
+                switch(heading){
+                    case UP:
+                        move_rightleft(motionEvent);
+                    case DOWN:
+                        move_rightleft(motionEvent);
+                    case RIGHT:
+                        move_updown(motionEvent);
+                    case LEFT:
+                        move_updown(motionEvent);
                 }
         }
         return true;
+    }
+
+    public void move_rightleft(MotionEvent motionEvent) {
+        if(motionEvent.getX() >= snakeXs[0]){
+            heading = Heading.RIGHT;
+        } else {
+            heading = Heading.LEFT;
+        }
+    }
+
+    public void move_updown(MotionEvent motionEvent) {
+        if(motionEvent.getY() >= snakeYs[0]){
+            heading = Heading.UP;
+        } else {
+            heading = Heading.DOWN;
+        }
     }
 
 }
