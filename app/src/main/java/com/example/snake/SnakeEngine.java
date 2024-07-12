@@ -1,16 +1,12 @@
 package com.example.snake;
 
 import android.content.Context;
-import android.content.res.AssetFileDescriptor;
 import android.graphics.Point;
-import android.media.AudioManager;
 import android.media.SoundPool;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
-import java.io.IOException;
 import java.util.Random;
-import android.content.res.AssetManager;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -24,7 +20,7 @@ class SnakeEngine extends SurfaceView implements Runnable {
     // To hold a reference to the Activity
     private Context context;
 
-    // for plaing sound effects
+    // for playing sound effects
     private SoundPool soundPool;
     private int eat_bob = -1;
     private int snake_crash = -1;
@@ -217,7 +213,7 @@ class SnakeEngine extends SurfaceView implements Runnable {
         // Increase the size of the snake
         snakeLength++;
         //replace Bob
-        // This reminds me of Edge of Tomorrow. Oneday Bob will be ready!
+        // This reminds me of Edge of Tomorrow. One day Bob will be ready!
         spawnBob();
         //add to the score
         score = score + 1;
