@@ -10,18 +10,18 @@
         android:id="@+id/start_game_button"
         android:layout_width="149dp"
         android:layout_height="57dp"
-        android:layout_marginStart="140dp"
-        android:layout_marginTop="296dp"
+        android:layout_marginTop="20dp"
         android:text="@string/start_game"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toBottomOf="@+id/game_name_text_view" />
 
     <SeekBar
         android:id="@+id/speed_slider"
         style="@style/Widget.AppCompat.SeekBar.Discrete"
         android:layout_width="309dp"
         android:layout_height="67dp"
-        android:layout_marginBottom="180dp"
+        android:layout_marginBottom="30dp"
         android:max="10"
         android:progress="1"
         app:layout_constraintBottom_toBottomOf="parent"
@@ -32,19 +32,19 @@
         android:id="@+id/game_speed_text_view"
         android:layout_width="130dp"
         android:layout_height="26dp"
-        android:layout_marginEnd="140dp"
-        android:layout_marginBottom="8dp"
+        android:layout_marginBottom="12dp"
         android:text="@string/game_speed"
         android:textAlignment="center"
         app:layout_constraintBottom_toTopOf="@+id/speed_slider"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
 
     <TextView
         android:id="@+id/game_name_text_view"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="50dp"
-        android:layout_marginTop="32dp"
+        android:layout_marginTop="15dp"
         android:layout_marginEnd="50dp"
         android:text="@string/app_name"
         android:textAppearance="@style/TextAppearance.AppCompat.Display4"

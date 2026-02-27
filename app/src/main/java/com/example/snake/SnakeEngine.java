@@ -1,20 +1,19 @@
 package com.example.snake;
 
 import android.content.Context;
-import android.content.res.AssetFileDescriptor;
-import android.graphics.Point;
-import android.media.AudioManager;
-import android.media.SoundPool;
-import android.view.MotionEvent;
-import android.view.SurfaceHolder;
-import android.view.SurfaceView;
-import java.io.IOException;
-import java.util.Random;
-import android.content.res.AssetManager;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Point;
+import android.view.GestureDetector;
+import android.view.MotionEvent;
+import android.view.SurfaceHolder;
+import android.view.SurfaceView;
 
+import androidx.core.view.GestureDetectorCompat;
+
+import java.util.ArrayList;
+import java.util.Random;
 
 class SnakeEngine extends SurfaceView implements Runnable {
 
@@ -23,11 +22,6 @@ class SnakeEngine extends SurfaceView implements Runnable {
 
     // To hold a reference to the Activity
     private Context context;
-
-    // for plaing sound effects
-    private SoundPool soundPool;
-    private int eat_bob = -1;
-    private int snake_crash = -1;
 
     // For tracking movement Heading
     public enum Heading {UP, RIGHT, DOWN, LEFT}
@@ -38,53 +32,50 @@ class SnakeEngine extends SurfaceView implements Runnable {
     private int screenX;
     private int screenY;
 
-    // How long is the snake
-    private int snakeLength;
+    // The snake body locations
+    private ArrayList<Point> snakeBody;
 
     // Where is Bob hiding?
     private int bobX;
     private int bobY;
 
-    // // The size in pixels of a snake segment
+    // The size in pixels of a snake segment
     private int blockSize;
 
-    // // The size in segments of the playable area
+    // The size in segments of the playable area
     private final int NUM_BLOCKS_WIDE = 40;
     private int numBlocksHigh;
 
-    // // Control pausing between updates
+    // Control pausing between updates
     private long nextFrameTime;
-    // // Update the game 10 times per second
+    // Update the game 10 times per second
     private int FPS = 1;
-    // // There are 1000 milliseconds in a second
+    // There are 1000 milliseconds in a second
     private final long MILLIS_PER_SECOND = 1000;
-    // We will draw the frame much more often
 
     // How many points does the player have
     private int score;
 
-    // The location in the grid of all the segments
-    private int[] snakeXs;
-    private int[] snakeYs;
-
     // Everything we need for drawing
-    // // Is the game currently playing?
+    // Is the game currently playing?
     private volatile boolean isPlaying;
 
-    // // A canvas for our paint
+    // A canvas for our paint
     private Canvas canvas;
 
-    // // Required to use canvas
+    // Required to use canvas
     private SurfaceHolder surfaceHolder;
 
-    // // Some paint for our canvas
+    // Some paint for our canvas
     private Paint paint;
-
+    
+    // For swipe input detection
+    private GestureDetectorCompat gestureDetector;
 
     public SnakeEngine(Context context, Point size, int speed) {
         super(context);
 
-        context = context;
+        this.context = context;
 
         screenX = size.x;
         screenY = size.y;
@@ -94,37 +85,55 @@ class SnakeEngine extends SurfaceView implements Runnable {
         // How many blocks of the same size will fit into the height
         numBlocksHigh = screenY / blockSize;
 
-        FPS = speed;
-        // Set the sound up
-        /*soundPool = new SoundPool(10, AudioManager.STREAM_MUSIC, 0);
-        try {
-            // Create objects of the 2 required classes
-            // Use m_Context because this is a reference to the Activity
-            AssetManager assetManager = context.getAssets();
-            AssetFileDescriptor descriptor;
-
-            // Prepare the two sounds in memory
-            descriptor = assetManager.openFd("get_mouse_sound.ogg");
-            eat_bob = soundPool.load(descriptor, 0);
-
-            descriptor = assetManager.openFd("death_sound.ogg");
-            snake_crash = soundPool.load(descriptor, 0);
-
-        } catch (IOException e) {
-            // Error
-        }*/
-
+        // Ensure minimum speed of 1 to avoid divide-by-zero
+        FPS = Math.max(1, speed);
 
         // Initialize the drawing objects
         surfaceHolder = getHolder();
         paint = new Paint();
 
-        // If you score 200 you are rewarded with a crash achievement!
-        snakeXs = new int[200];
-        snakeYs = new int[200];
+        // Unlimited snake length using dynamic array
+        snakeBody = new ArrayList<>();
+        
+        setupGestureDetector();
 
         // Start the game
         newGame();
+    }
+
+    private void setupGestureDetector() {
+        gestureDetector = new GestureDetectorCompat(context, new GestureDetector.SimpleOnGestureListener() {
+            @Override
+            public boolean onDown(MotionEvent e) {
+                return true; // Must return true for onFling to be recognized natively
+            }
+
+            @Override
+            public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
+                if (e1 == null || e2 == null) return false;
+                
+                float deltaX = e2.getX() - e1.getX();
+                float deltaY = e2.getY() - e1.getY();
+                
+                // Determine whether the swipe is predominantly horizontal or vertical
+                if (Math.abs(deltaX) > Math.abs(deltaY)) {
+                    // Horizontal swipe
+                    if (deltaX > 0 && heading != Heading.LEFT) {
+                        heading = Heading.RIGHT;
+                    } else if (deltaX < 0 && heading != Heading.RIGHT) {
+                        heading = Heading.LEFT;
+                    }
+                } else {
+                    // Vertical swipe
+                    if (deltaY > 0 && heading != Heading.UP) {
+                        heading = Heading.DOWN;
+                    } else if (deltaY < 0 && heading != Heading.DOWN) {
+                        heading = Heading.UP;
+                    }
+                }
+                return true;
+            }
+        });
     }
 
 
@@ -143,17 +152,19 @@ class SnakeEngine extends SurfaceView implements Runnable {
     }
 
     public void update() {
+        // Safe check for body
+        if (snakeBody.isEmpty()) return;
+        
+        Point head = snakeBody.get(0);
+        
         // Did the head of the snake eat Bob?
-        if (snakeXs[0] == bobX && snakeYs[0] == bobY) {
+        if (head.x == bobX && head.y == bobY) {
             eatBob();
         }
 
         moveSnake();
 
         if (detectDeath()) {
-            //start again
-            //soundPool.play(snake_crash, 1, 1, 0, 0, 1);
-
             newGame();
         }
     }
@@ -177,13 +188,9 @@ class SnakeEngine extends SurfaceView implements Runnable {
 
         // Are we due to update the frame
         if(nextFrameTime <= System.currentTimeMillis()){
-            // Tenth of a second has passed
-
             // Setup when the next update will be triggered
-            nextFrameTime =System.currentTimeMillis() + MILLIS_PER_SECOND / FPS;
-
-            // Return true so that the update and draw
-            // functions are executed
+            nextFrameTime = System.currentTimeMillis() + MILLIS_PER_SECOND / FPS;
+            // Return true so that the update and draw functions are executed
             return true;
         }
 
@@ -191,10 +198,15 @@ class SnakeEngine extends SurfaceView implements Runnable {
     }
 
     public void newGame() {
+        snakeBody.clear();
+        
         // Start with a single snake segment
-        snakeLength = 1;
-        snakeXs[0] = NUM_BLOCKS_WIDE / 2;
-        snakeYs[0] = numBlocksHigh / 2;
+        Point head = new Point();
+        head.x = NUM_BLOCKS_WIDE / 2;
+        head.y = numBlocksHigh / 2;
+        snakeBody.add(head);
+
+        heading = Heading.RIGHT;
 
         // Get Bob ready for dinner
         spawnBob();
@@ -215,44 +227,43 @@ class SnakeEngine extends SurfaceView implements Runnable {
     private void eatBob(){
         //  Got him!
         // Increase the size of the snake
-        snakeLength++;
+        Point tail = snakeBody.get(snakeBody.size() - 1);
+        snakeBody.add(new Point(tail.x, tail.y));
+        
         //replace Bob
-        // This reminds me of Edge of Tomorrow. Oneday Bob will be ready!
         spawnBob();
         //add to the score
         score = score + 1;
-        //soundPool.play(eat_bob, 1, 1, 0, 0, 1);
     }
-
 
     private void moveSnake(){
         // Move the body
-        for (int i = snakeLength; i > 0; i--) {
+        for (int i = snakeBody.size() - 1; i > 0; i--) {
             // Start at the back and move it
             // to the position of the segment in front of it
-            snakeXs[i] = snakeXs[i - 1];
-            snakeYs[i] = snakeYs[i - 1];
-
-            // Exclude the head because
-            // the head has nothing in front of it
+            Point current = snakeBody.get(i);
+            Point previous = snakeBody.get(i - 1);
+            current.x = previous.x;
+            current.y = previous.y;
         }
 
         // Move the head in the appropriate heading
+        Point head = snakeBody.get(0);
         switch (heading) {
             case UP:
-                snakeYs[0]--;
+                head.y--;
                 break;
 
             case RIGHT:
-                snakeXs[0]++;
+                head.x++;
                 break;
 
             case DOWN:
-                snakeYs[0]++;
+                head.y++;
                 break;
 
             case LEFT:
-                snakeXs[0]--;
+                head.x--;
                 break;
         }
     }
@@ -261,15 +272,18 @@ class SnakeEngine extends SurfaceView implements Runnable {
         // Has the snake died?
         boolean dead = false;
 
+        Point head = snakeBody.get(0);
+
         // Hit the screen edge
-        if (snakeXs[0] == -1) dead = true;
-        if (snakeXs[0] >= NUM_BLOCKS_WIDE) dead = true;
-        if (snakeYs[0] == -1) dead = true;
-        if (snakeYs[0] == numBlocksHigh) dead = true;
+        if (head.x < 0) dead = true;
+        if (head.x >= NUM_BLOCKS_WIDE) dead = true;
+        if (head.y < 0) dead = true;
+        if (head.y >= numBlocksHigh) dead = true;
 
         // Eaten itself?
-        for (int i = snakeLength - 1; i > 0; i--) {
-            if ((i > 4) && (snakeXs[0] == snakeXs[i]) && (snakeYs[0] == snakeYs[i])) {
+        for (int i = snakeBody.size() - 1; i > 0; i--) {
+            Point part = snakeBody.get(i);
+            if (head.x == part.x && head.y == part.y) {
                 dead = true;
             }
         }
@@ -288,16 +302,16 @@ class SnakeEngine extends SurfaceView implements Runnable {
             // Set the color of the paint to draw the snake white
             paint.setColor(Color.argb(255, 255, 255, 255));
 
-            // Scale the HUD text
-            paint.setTextSize(90);
-            canvas.drawText("Score:" + score, 10, 70, paint);
+            // Scale the HUD text relative to screen dimension
+            paint.setTextSize(screenY / 15f);
+            canvas.drawText("Score: " + score, 20, screenY / 10f, paint);
 
             // Draw the snake one block at a time
-            for (int i = 0; i < snakeLength; i++) {
-                canvas.drawRect(snakeXs[i] * blockSize,
-                        (snakeYs[i] * blockSize),
-                        (snakeXs[i] * blockSize) + blockSize,
-                        (snakeYs[i] * blockSize) + blockSize,
+            for (Point p : snakeBody) {
+                canvas.drawRect(p.x * blockSize,
+                        (p.y * blockSize),
+                        (p.x * blockSize) + blockSize,
+                        (p.y * blockSize) + blockSize,
                         paint);
             }
 
@@ -318,37 +332,10 @@ class SnakeEngine extends SurfaceView implements Runnable {
 
     @Override
     public boolean onTouchEvent(MotionEvent motionEvent) {
-
-        switch (motionEvent.getAction() & MotionEvent.ACTION_MASK) {
-            case MotionEvent.ACTION_DOWN:
-                switch(heading){
-                    case UP:
-                        move_rightleft(motionEvent);
-                    case DOWN:
-                        move_rightleft(motionEvent);
-                    case RIGHT:
-                        move_updown(motionEvent);
-                    case LEFT:
-                        move_updown(motionEvent);
-                }
+        // Forward touch events to the gesture detector
+        if (gestureDetector.onTouchEvent(motionEvent)) {
+            return true;
         }
-        return true;
+        return super.onTouchEvent(motionEvent);
     }
-
-    public void move_rightleft(MotionEvent motionEvent) {
-        if(motionEvent.getX() >= snakeXs[0]){
-            heading = Heading.RIGHT;
-        } else {
-            heading = Heading.LEFT;
-        }
-    }
-
-    public void move_updown(MotionEvent motionEvent) {
-        if(motionEvent.getY() >= snakeYs[0]){
-            heading = Heading.UP;
-        } else {
-            heading = Heading.DOWN;
-        }
-    }
-
 }

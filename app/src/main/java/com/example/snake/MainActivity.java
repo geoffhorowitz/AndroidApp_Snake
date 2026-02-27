@@ -1,15 +1,16 @@
 package com.example.snake;
 
 import androidx.appcompat.app.AppCompatActivity;
+import android.app.Activity;
 
 import android.content.Intent;
 import android.os.Bundle;
 import android.widget.SeekBar;
 import android.widget.Button;
 import android.view.View;
+import android.app.Activity;
 
-
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends Activity {
 
     // variable inits
     SeekBar speed_slider_obj;
@@ -57,7 +58,7 @@ public class MainActivity extends AppCompatActivity {
                 public void onClick(View view) {
                     //activate Snake Activity
                     Intent intent = new Intent(view.getContext(), SnakeActivity.class);
-                    intent.putExtra("speed", speed_set_val);
+                    intent.putExtra("speed", Math.max(1, speed_set_val));
                     view.getContext().startActivity(intent);
                 }
             });

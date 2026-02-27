@@ -9,6 +9,8 @@ import android.view.Display;
 
 import androidx.annotation.RequiresApi;
 
+import android.app.Activity;
+
 public class SnakeActivity extends Activity {
     // Declare instance of SnakeEngine
     SnakeEngine snakeEngine;
